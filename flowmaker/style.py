@@ -70,6 +70,17 @@ HIST_END = ("fully clothed, no bare skin. Faces are turned away or out of frame.
 REAL_HEAD = "Photoreal restrained documentary grade, natural daylight, muted palette of "
 REAL_END = "No people in frame. No text, no captions, no watermark, no UI, no logo."
 
+DRAMA_END = ("fully clothed. Faces remain visible and expressive. "
+             "No text, no captions, no watermark, no UI, no logo.")
+
+
+def drama_tail() -> str:
+    """Modern family drama with visible faces and everyday clothing."""
+    return (" Photoreal restrained documentary grade in the look of a modern Korean family drama, "
+            "soft natural window light, warm cream and brown palette. People wear everyday "
+            "long-sleeved casual clothing with covered torsos, " + DRAMA_END)
+
+
 # ── 구성 규칙 (완성 편 실측에서 역산) ────────────────────────────────────────
 PHOTOREAL_SHARE_MAX = 0.28     # hist+real 화면시간 합 / 전체
 PHOTOREAL_RUN_MAX_SEC = 16.0   # 실사가 연속으로 이어질 수 있는 최대 초
@@ -101,14 +112,18 @@ def _dur(c: dict) -> float:
     return float(c.get("need") or c["len"])
 
 
-def check(cuts: list[dict]) -> list[str]:
+def check(cuts: list[dict], mode: str = "mixed") -> list[str]:
     """컷 목록을 검사해 위반 문장 목록을 돌려준다. 비어 있으면 통과.
 
     각 컷: {"n": int, "len": 4|6|8|10, "kind": "diag"|"hist"|"real", "prompt": str, "need": float?}
     규칙마다 실제로 겪은 사고가 있다 — 지우지 말고 보태기만 할 것.
     """
+    if mode not in ("mixed", "photoreal"):
+        return ["영상 스타일은 mixed 또는 photoreal이어야 한다"]
     bad: list[str] = []
     for c in cuts:
+        if mode == "photoreal" and c.get("kind") not in ("hist", "real"):
+            bad.append(f"C{c['n']:02d}: 전체 실사 모드에서는 real 또는 hist 컷을 사용하라")
         p, n, k = c["prompt"], c["n"], c.get("kind")
         tag = f"C{n:02d}"
         # 01 숫자 — 엉뚱한 숫자를 그린다("3D"의 3은 예외)
@@ -128,7 +143,7 @@ def check(cuts: list[dict]) -> list[str]:
         # 05 정본 꼬리 — 토씨 하나 다르면 걸린다 (diag 전체 · hist/real 은 고정 머리·꼬리)
         if k == "diag" and not p.rstrip().endswith(diag_tail().strip()):
             bad.append(f"{tag}: diag 꼬리가 정본과 다르다 — diag_tail() 을 그대로 붙여라")
-        if k == "hist" and not (HIST_HEAD in p and p.rstrip().endswith(HIST_END)):
+        if k == "hist" and not (HIST_HEAD in p and p.rstrip().endswith((HIST_END, DRAMA_END))):
             bad.append(f"{tag}: hist 꼬리가 정본과 다르다 — hist_tail() 을 그대로 붙여라")
         if k == "real" and not (REAL_HEAD in p and p.rstrip().endswith(REAL_END)):
             bad.append(f"{tag}: real 꼬리가 정본과 다르다 — real_tail() 을 그대로 붙여라")
@@ -148,7 +163,7 @@ def check(cuts: list[dict]) -> list[str]:
     # 09 실사 비중
     total = sum(_dur(c) for c in cuts)
     photo = sum(_dur(c) for c in cuts if c.get("kind") in ("hist", "real"))
-    if total and photo / total > PHOTOREAL_SHARE_MAX:
+    if mode == "mixed" and total and photo / total > PHOTOREAL_SHARE_MAX:
         bad.append(f"실사 비중 {photo/total*100:.1f}% > 상한 {PHOTOREAL_SHARE_MAX*100:.0f}% "
                    f"— 원리 컷을 diag로 돌려라")
     # 10 연속 실사
@@ -156,7 +171,7 @@ def check(cuts: list[dict]) -> list[str]:
     for c in cuts:
         run = run + _dur(c) if c.get("kind") in ("hist", "real") else 0.0
         best = max(best, run)
-    if best > PHOTOREAL_RUN_MAX_SEC:
+    if mode == "mixed" and best > PHOTOREAL_RUN_MAX_SEC:
         bad.append(f"연속 실사 {best:.1f}초 > 상한 {PHOTOREAL_RUN_MAX_SEC:.0f}초 — 사이에 diag를 넣어라")
     return bad
 

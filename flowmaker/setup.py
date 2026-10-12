@@ -242,7 +242,7 @@ def run(no_ffmpeg: bool = False, dry_run: bool = False) -> bool:
     else:
         shutil.copy(example, envf)
         print(f"\n▶ .env 를 만들었다 → {envf}\n"
-              f"  ELEVENLABS_API_KEY 를 채워라 (더빙·효과음에 필요. 없어도 컷 생성까지는 된다)")
+              f"  Vertex AI ADC 인증과 무료 크레딧 확인 기록을 준비하라")
 
     # 6) 자막 폰트 — 새 venv 에는 이 프로세스의 PIL 이 없으므로 그쪽 파이썬으로 부른다
     _run([str(py), "-c", "from flowmaker.subtitles import ensure_font; print(ensure_font())"],
@@ -262,6 +262,6 @@ def run(no_ffmpeg: bool = False, dry_run: bool = False) -> bool:
         act = r".venv\Scripts\Activate.ps1" if sys.platform == "win32" else "source .venv/bin/activate"
         print(f"\n★ 이후 명령은 가상환경 안에서 실행하라:  {act}")
         print(f"  (또는 매번 `{py} -m flowmaker <명령>`)")
-    print("\n다음: `login` 으로 구글 로그인 → 에이전트에게 \"소재 찾아줘\"" if ok
+    print("\n다음: ADC 인증 확인 → 에이전트에게 \"소재 찾아줘\"" if ok
           else "\n위 실패 항목을 해결한 뒤 `setup` 을 다시 실행하라.")
     return ok
