@@ -101,14 +101,18 @@ def _dur(c: dict) -> float:
     return float(c.get("need") or c["len"])
 
 
-def check(cuts: list[dict]) -> list[str]:
+def check(cuts: list[dict], mode: str = "mixed") -> list[str]:
     """컷 목록을 검사해 위반 문장 목록을 돌려준다. 비어 있으면 통과.
 
     각 컷: {"n": int, "len": 4|6|8|10, "kind": "diag"|"hist"|"real", "prompt": str, "need": float?}
     규칙마다 실제로 겪은 사고가 있다 — 지우지 말고 보태기만 할 것.
     """
+    if mode not in ("mixed", "photoreal"):
+        return ["영상 스타일은 mixed 또는 photoreal이어야 한다"]
     bad: list[str] = []
     for c in cuts:
+        if mode == "photoreal" and c.get("kind") not in ("hist", "real"):
+            bad.append(f"C{c['n']:02d}: 전체 실사 모드에서는 real 또는 hist 컷을 사용하라")
         p, n, k = c["prompt"], c["n"], c.get("kind")
         tag = f"C{n:02d}"
         # 01 숫자 — 엉뚱한 숫자를 그린다("3D"의 3은 예외)
@@ -148,7 +152,7 @@ def check(cuts: list[dict]) -> list[str]:
     # 09 실사 비중
     total = sum(_dur(c) for c in cuts)
     photo = sum(_dur(c) for c in cuts if c.get("kind") in ("hist", "real"))
-    if total and photo / total > PHOTOREAL_SHARE_MAX:
+    if mode == "mixed" and total and photo / total > PHOTOREAL_SHARE_MAX:
         bad.append(f"실사 비중 {photo/total*100:.1f}% > 상한 {PHOTOREAL_SHARE_MAX*100:.0f}% "
                    f"— 원리 컷을 diag로 돌려라")
     # 10 연속 실사
@@ -156,7 +160,7 @@ def check(cuts: list[dict]) -> list[str]:
     for c in cuts:
         run = run + _dur(c) if c.get("kind") in ("hist", "real") else 0.0
         best = max(best, run)
-    if best > PHOTOREAL_RUN_MAX_SEC:
+    if mode == "mixed" and best > PHOTOREAL_RUN_MAX_SEC:
         bad.append(f"연속 실사 {best:.1f}초 > 상한 {PHOTOREAL_RUN_MAX_SEC:.0f}초 — 사이에 diag를 넣어라")
     return bad
 

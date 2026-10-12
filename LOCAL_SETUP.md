@@ -16,7 +16,7 @@
 - 같은 목소리와 스타일로 문장별 생성하고 로컬 WAV 캐시를 재사용합니다. 톤이 문장 사이에서 다소 달라질 수 있습니다.
 - 문장 경계는 WAV 실측 시간이며, 글자별 시간은 문장 내부 보간입니다. 단어 단위 강제 정렬은 아닙니다.
 - 출력은 기존 `narration_raw.mp3`, `alignment.json` 규약을 유지하므로 timing/subs/assemble을 사용할 수 있습니다.
-- 효과음 및 배경음악의 외부 생성 API는 차단했습니다. 저작권 확인된 로컬 파일을 넣습니다.
+- 효과음·음악은 외부 API 대신 원본 로컬 합성 또는 저작권 확인된 파일을 사용합니다.
 - Flow 웹 로그인과 ElevenLabs 키는 필요 없습니다. 원본 flow_driver는 참고 코드 및 기존 순수 로직 테스트용으로 남아 있습니다.
 
 ## 실행
@@ -24,6 +24,7 @@
 ```bash
 cd flowmaker_public
 .venv/bin/python -m flowmaker doctor
+export VIDEO_STYLE=mixed  # 원본 점토 예시를 사용할 때
 .venv/bin/python -m flowmaker new bridge --from drawbridge
 .venv/bin/python -m flowmaker tts bridge
 .venv/bin/python -m flowmaker timing bridge --target 100
@@ -76,3 +77,22 @@ cd flowmaker_public
 
 검증은 합성 WAV/가짜 API 응답으로 음성 디코딩, 문장 타이밍, 캐시, 비용 차단과 기존 조립을 확인합니다.
 설치 자체에는 과금 API 호출이 필요하지 않습니다. 실제 TTS 출력 품질은 별도 크레딧 검토 후 확인해야 합니다.
+
+## 전체 실사와 음악·효과음
+
+기본 `VIDEO_STYLE=photoreal`은 전체 컷을 real/hist 실사로 구성하며 원본의 실사 비중 제한을 적용하지 않습니다.
+프롬프트 꼬리·숫자·구성 요소 검사 등은 유지합니다. 원본 점토 예시는 `VIDEO_STYLE=mixed`로 실행합니다.
+
+```bash
+flowmaker music myproject ambient --seconds 100  # 잔잔한 원본 합성 배경음악
+flowmaker music myproject pulse --seconds 100    # 리듬이 있는 합성 배경음악
+flowmaker audio myproject /absolute/path/music.wav --kind bgm
+flowmaker audio myproject /absolute/path/effect.wav --kind sfx --name lever --sentence 1 --offset 2 --volume 0.3
+flowmaker sfx myproject
+flowmaker assemble myproject
+```
+
+`music`은 자유형 AI 작곡이 아닌 ambient/pulse 프리셋 합성입니다. API 비용이 없으며 생성한 파형은
+외부 음원에서 복제하지 않습니다. `sfx.json`에 `preset: chime` 또는 `preset: whoosh`와 `duration`을
+넣으면 효과음도 로컬에서 합성합니다. 가져온 음원은 사용자가 사용 권리를 확인해야 합니다.
+기존 조립기는 음악을 더빙에 맞춰 자동으로 줄이고, 효과음을 지정 문장과 offset에 배치합니다.

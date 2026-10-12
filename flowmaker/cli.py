@@ -14,8 +14,8 @@
     collect <프로젝트> <len>     Vertex AI 클립 저장 상태 확인
     review <프로젝트>            프레임 검수 시트
     subs <프로젝트>              자막 PNG
-    sfx <프로젝트>               로컬 효과음 확인 (외부 생성 API 차단)
-    music <프로젝트> "prompt"    외부 생성 차단 안내 · bgm.mp3 직접 사용
+    sfx <프로젝트>               로컬 효과음 생성·확인 (chime/whoosh)
+    music <프로젝트> "prompt"    무료 로컬 음악 합성 (ambient 또는 pulse)
     assemble <프로젝트>          최종 조립 → final.mp4
     status <프로젝트>            진행 상황
 
@@ -27,7 +27,7 @@ import argparse
 import shutil
 import sys
 
-from . import style
+from . import style, env
 from .env import REPO_ROOT
 from .project import Project, is_name, summary, validate_cuts
 
@@ -73,7 +73,7 @@ def cmd_check(a):
     problems = validate_cuts(cuts, p.n_sentences())
     for x in problems:
         print("★형식:", x)
-    bad = style.check(cuts) if not problems else []
+    bad = style.check(cuts, mode=env.get("VIDEO_STYLE", "photoreal")) if not problems else []
     for x in bad:
         print("★위반:", x)
     if problems or bad:
@@ -143,6 +143,14 @@ def main(argv=None) -> None:
             s.add_argument("--only", help="컷 번호, 쉼표 구분 (예: 3,7)")
     s = sub.add_parser("music"); s.add_argument("project"); s.add_argument("prompt"); s.add_argument("--seconds", type=int, default=100)
 
+    s = sub.add_parser("audio", help="로컬 음악 또는 효과음 파일 연결")
+    s.add_argument("project"); s.add_argument("file")
+    s.add_argument("--kind", choices=("bgm", "sfx"), required=True)
+    s.add_argument("--name", default="effect")
+    s.add_argument("--sentence", type=int, default=1)
+    s.add_argument("--offset", type=float, default=0)
+    s.add_argument("--volume", type=float, default=0.35)
+
     a = ap.parse_args(argv)
     if a.cmd == "setup":
         from . import setup as setup_mod
@@ -182,5 +190,8 @@ def main(argv=None) -> None:
             sys.exit(1)
     elif a.cmd == "music":
         from . import sfx; sfx.music(p, a.prompt, a.seconds)
+    elif a.cmd == "audio":
+        from . import sfx
+        sfx.attach(p, a.file, a.kind, a.name, a.sentence, a.offset, a.volume)
     elif a.cmd == "assemble":
         from . import assemble; assemble.run(p)
