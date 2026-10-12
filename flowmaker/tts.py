@@ -44,8 +44,13 @@ def synthesize(project: Project):
     if not lines:
         raise SystemExit('대본이 비어 있다')
     cache = project.build / 'tts'; cache.mkdir(parents=True,exist_ok=True)
+    voice_path = project.dir / 'voices.json'
+    voices = json.loads(voice_path.read_text(encoding='utf-8')) if voice_path.exists() else {}
     frames, chars, starts, ends, pos, rate = [],[],[],[],0.0,None
-    for text in lines:
+    for line_number, text in enumerate(lines, 1):
+        settings = voices.get(str(line_number), {})
+        voice = settings.get('voice', env.get('TTS_VOICE', DEFAULT_VOICE))
+        style = settings.get('style', env.get('TTS_STYLE', 'Clear natural Korean documentary narration, consistent calm delivery'))
         digest = hashlib.sha256(json.dumps([vertex.project_id(),model,voice,style,text]).encode()).hexdigest()
         saved = cache / f'{digest}.wav'
         if saved.exists():
@@ -76,7 +81,7 @@ def synthesize(project: Project):
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(rate); w.writeframes(b''.join(frames))
     subprocess.run(['ffmpeg','-v','error','-i',str(combined),'-c:a','libmp3lame','-b:a','128k',str(project.narration_raw),'-y'],check=True)
     alignment = {'characters':chars,'character_start_times_seconds':starts,'character_end_times_seconds':ends,
-                 'source':'gemini_sentence_audio','character_timing':'interpolated','model':model,'voice':voice}
+                 'source':'gemini_sentence_audio','character_timing':'interpolated','model':model,'default_voice':env.get('TTS_VOICE',DEFAULT_VOICE),'voices_by_line':voices}
     project.alignment.write_text(json.dumps(alignment,ensure_ascii=False),encoding='utf-8')
     print(f'더빙 저장 · {model} · {len(lines)}문장 · {pos:.2f}초 (글자 타이밍은 추정값)')
     return {'chars':len(chars),'seconds':pos,'model':model}

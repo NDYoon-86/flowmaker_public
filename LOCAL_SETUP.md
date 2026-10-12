@@ -96,3 +96,17 @@ flowmaker assemble myproject
 외부 음원에서 복제하지 않습니다. `sfx.json`에 `preset: chime` 또는 `preset: whoosh`와 `duration`을
 넣으면 효과음도 로컬에서 합성합니다. 가져온 음원은 사용자가 사용 권리를 확인해야 합니다.
 기존 조립기는 음악을 더빙에 맞춰 자동으로 줄이고, 효과음을 지정 문장과 offset에 배치합니다.
+
+## 캐릭터별 더빙과 외형 참고
+
+프로젝트의 `voices.json`에 대본 줄 번호별 voice/style을 지정할 수 있습니다.
+각 voice는 Gemini의 사전 제공 음성입니다. 특정 인물의 실제 목소리를 복제하지 않습니다.
+
+```json
+{"1": {"voice": "Charon", "style": "Warm mature Korean father"}, "2": {"voice": "Kore", "style": "Energetic Korean mother"}}
+```
+
+`cuts.json`의 각 컷에 `references: ["assets/papa.png"]`처럼 프로젝트 내부 이미지 경로를
+지정하면 Omni reference_to_video 경로를 사용합니다. 이미지는 Vertex AI로 전송됩니다.
+`style.drama_tail()`은 현대 가족 드라마용 조명·의상·얼굴 표현을 지정합니다.
+참조 이미지가 있어도 생성 간 외형과 립싱크가 완벽히 일치하는 것은 보장되지 않습니다.

@@ -115,3 +115,31 @@ def test_invalid_cuts_block_video_before_request(tmp_path,monkeypatch):
     p=Project(tmp_path);p.cuts_path.write_text('[]',encoding='utf-8')
     monkeypatch.setattr(vertex,'request',lambda *a:pytest.fail('invalid cuts reached paid API'))
     with pytest.raises(SystemExit,match='검사 실패'):vertex_video.submit(p,4)
+
+
+def test_voice_map_assigns_distinct_speakers(tmp_path,monkeypatch):
+    p=Project(tmp_path);p.script.write_text('아빠 대사.\n엄마 대사.\n',encoding='utf-8')
+    p.dir.joinpath('voices.json').write_text(json.dumps({'1':{'voice':'Charon','style':'mature father'},'2':{'voice':'Kore','style':'energetic mother'}}),encoding='utf-8')
+    monkeypatch.setenv('GOOGLE_CLOUD_PROJECT','test-project');monkeypatch.setenv('TTS_MODEL',tts.MODEL)
+    seen=[]
+    def fake(path,body,model):
+        seen.append((body['generationConfig']['speechConfig']['voiceConfig']['voice'],body['contents'][0]['parts'][0]['speechMetadata']['style']))
+        return audio(1)
+    monkeypatch.setattr(vertex,'request',fake)
+    tts.synthesize(p)
+    assert seen==[('Charon','mature father'),('Kore','energetic mother')]
+
+
+def test_reference_media_selects_reference_task(tmp_path,monkeypatch):
+    from flowmaker import vertex_video,cli
+    p=Project(tmp_path);p.script.write_text('아빠.',encoding='utf-8')
+    (tmp_path/'portrait.png').write_bytes(b'portrait')
+    p.cuts_path.write_text(json.dumps([{'n':1,'len':4,'kind':'hist','sentences':[1],'prompt':'A father holding a cream envelope with natural window light.','references':['portrait.png']}]),encoding='utf-8')
+    monkeypatch.setattr(cli,'cmd_check',lambda a:None)
+    def fake(path,body,model):
+        assert body['generation_config']['video_config']['task']=='reference_to_video'
+        assert body['input'][0]['mime_type']=='image/png'
+        assert base64.b64decode(body['input'][0]['data'])==b'portrait'
+        return {'status':'completed','steps':[{'content':[{'type':'video','data':base64.b64encode(b'video').decode()}]}]}
+    monkeypatch.setattr(vertex,'request',fake)
+    vertex_video.submit(p,4)

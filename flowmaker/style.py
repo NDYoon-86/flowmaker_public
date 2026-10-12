@@ -70,6 +70,17 @@ HIST_END = ("fully clothed, no bare skin. Faces are turned away or out of frame.
 REAL_HEAD = "Photoreal restrained documentary grade, natural daylight, muted palette of "
 REAL_END = "No people in frame. No text, no captions, no watermark, no UI, no logo."
 
+DRAMA_END = ("fully clothed. Faces remain visible and expressive. "
+             "No text, no captions, no watermark, no UI, no logo.")
+
+
+def drama_tail() -> str:
+    """Modern family drama with visible faces and everyday clothing."""
+    return (" Photoreal restrained documentary grade in the look of a modern Korean family drama, "
+            "soft natural window light, warm cream and brown palette. People wear everyday "
+            "long-sleeved casual clothing with covered torsos, " + DRAMA_END)
+
+
 # ── 구성 규칙 (완성 편 실측에서 역산) ────────────────────────────────────────
 PHOTOREAL_SHARE_MAX = 0.28     # hist+real 화면시간 합 / 전체
 PHOTOREAL_RUN_MAX_SEC = 16.0   # 실사가 연속으로 이어질 수 있는 최대 초
@@ -132,7 +143,7 @@ def check(cuts: list[dict], mode: str = "mixed") -> list[str]:
         # 05 정본 꼬리 — 토씨 하나 다르면 걸린다 (diag 전체 · hist/real 은 고정 머리·꼬리)
         if k == "diag" and not p.rstrip().endswith(diag_tail().strip()):
             bad.append(f"{tag}: diag 꼬리가 정본과 다르다 — diag_tail() 을 그대로 붙여라")
-        if k == "hist" and not (HIST_HEAD in p and p.rstrip().endswith(HIST_END)):
+        if k == "hist" and not (HIST_HEAD in p and p.rstrip().endswith((HIST_END, DRAMA_END))):
             bad.append(f"{tag}: hist 꼬리가 정본과 다르다 — hist_tail() 을 그대로 붙여라")
         if k == "real" and not (REAL_HEAD in p and p.rstrip().endswith(REAL_END)):
             bad.append(f"{tag}: real 꼬리가 정본과 다르다 — real_tail() 을 그대로 붙여라")

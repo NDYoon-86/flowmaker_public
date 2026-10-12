@@ -38,3 +38,9 @@ def test_audio_import_rejects_unsafe_names(tmp_path,name):
     p=Project(tmp_path);p.script.write_text('테스트.',encoding='utf-8')
     source=tmp_path/'input.wav';source.write_bytes(b'placeholder')
     with pytest.raises(SystemExit,match='음원 이름'):sfx.attach(p,source,'sfx',name)
+
+
+def test_modern_drama_tail_allows_visible_faces():
+    cut={'n':1,'len':8,'kind':'hist','prompt':'A father wears a navy jacket, smiles at his family.'+style.drama_tail()}
+    assert 'Faces remain visible' in cut['prompt']
+    assert style.check([cut],mode='photoreal')==[]
