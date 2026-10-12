@@ -1,3 +1,7 @@
+> 이 로컬 설치본은 Vertex AI 전용으로 수정됐습니다. 음성은 Gemini 3.8 Flash TTS,
+> 영상은 Omni 1.1을 사용합니다. 실행 방법과 차이는 [LOCAL_SETUP.md](LOCAL_SETUP.md)를 먼저 읽으세요.
+> 아래 Flow/ElevenLabs 설명은 원본 레포의 사용법입니다.
+
 # flowmaker
 
 구글 Flow 로 컷을 생성하고, ElevenLabs 로 더빙하고, ffmpeg 으로 조립해서

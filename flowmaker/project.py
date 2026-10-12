@@ -186,5 +186,5 @@ def credits(cuts: list[dict], only_pending: bool = False) -> int:
 def summary(cuts: list[dict]) -> str:
     by = {k: [c for c in cuts if c["kind"] == k] for k in KINDS}
     parts = [f"{k} {len(v)}컷 {sum(x['len'] for x in v)}초" for k, v in by.items() if v]
-    return (f"{len(cuts)}컷 · 생성 길이 합 {sum(c['len'] for c in cuts)}초 · 크레딧 {credits(cuts)} "
-            f"(미생성 {credits(cuts, True)}) · " + " / ".join(parts))
+    return (f"{len(cuts)}컷 · 생성 길이 합 {sum(c['len'] for c in cuts)}초 · 원본 Flow 참고 크레딧 {credits(cuts)} "
+            f"(미생성 {credits(cuts, True)}; Vertex 비용은 별도 단가 확인) · " + " / ".join(parts))

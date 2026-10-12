@@ -58,12 +58,13 @@ def run(install_font: bool = True) -> bool:
             line(False, "자막 폰트", str(e))
 
     env.load_env()
-    key = env.get("ELEVENLABS_API_KEY")
-    line(bool(key), "ELEVENLABS_API_KEY" + (f" (…{key[-4:]})" if key else ""),
-         "더빙·효과음에 필요. .env 에 ELEVENLABS_API_KEY=… — 없어도 대본·컷 계획·Flow 생성·검수까지는 된다", required=False)
-    prof = env.home() / "profile"
-    line(prof.exists() and any(prof.iterdir()), "Flow 로그인 프로필",
-         "python -m flowmaker login  (창이 뜨면 구글 로그인 — Flow 생성에 필요)", required=False)
+    from pathlib import Path
+    adc = Path.home() / ".config/gcloud/application_default_credentials.json"
+    custom = env.get("GOOGLE_APPLICATION_CREDENTIALS")
+    line(bool(shutil.which("gcloud")) and (Path(custom).exists() if custom else adc.exists()),
+         "Vertex AI ADC", "gcloud auth application-default login", required=False)
+    line(bool(env.get("GOOGLE_CLOUD_PROJECT")), "Vertex AI 프로젝트", "GOOGLE_CLOUD_PROJECT를 설정하라", required=False)
+    print("  ·  무료 크레딧: 유료 호출 전 실시간 확인 필요 (credit-check.json)")
 
     print()
     if not required_ok:

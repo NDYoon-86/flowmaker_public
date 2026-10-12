@@ -4,18 +4,18 @@
 제작 순서 (AGENTS.md 의 절차와 같다)
     setup                       clone 직후 한 번 — 파이썬 패키지 · 크로미엄 · ffmpeg · .env · 폰트를 깐다
     doctor                      환경 점검 (깔지는 않는다 — 부족하면 `setup`)
-    login                       Flow 로그인 (한 번) — 같은 창에서 생성 설정(동영상·9:16·출력 1개)을 맞춰 둔다
+    login                       Vertex AI ADC 인증 안내
     new <이름> [--from moai]     프로젝트 폴더 만들기 (예시 복사 가능)
     check <프로젝트>             cuts.json 형식 + 그림체 정본 검사 (크레딧 0)
-    tts <프로젝트>               원샷 더빙
+    tts <프로젝트>               Gemini 문장별 더빙
     timing <프로젝트> --target 100   배속 + 자막 타임코드   (또는 --tempo 1.2)
     sync-need <프로젝트>         컷 길이(need)를 나레이션에 맞춤
-    submit <프로젝트> <len>      Flow 제출 (len = 4|6|8|10) [--only 3,7]   종료코드 3 = 일부만 전송
-    collect <프로젝트> <len>     생성된 클립 회수   종료코드 2 = 아직 생성 중
+    submit <프로젝트> <len>      Vertex AI 순차 생성·저장 (len = 4|6|8|10) [--only 3,7]
+    collect <프로젝트> <len>     Vertex AI 클립 저장 상태 확인
     review <프로젝트>            프레임 검수 시트
     subs <프로젝트>              자막 PNG
-    sfx <프로젝트>               효과음 생성 (sfx.json 있을 때)
-    music <프로젝트> "prompt"    배경음악 생성 (선택 · ElevenLabs 유료 플랜)
+    sfx <프로젝트>               로컬 효과음 확인 (외부 생성 API 차단)
+    music <프로젝트> "prompt"    외부 생성 차단 안내 · bgm.mp3 직접 사용
     assemble <프로젝트>          최종 조립 → final.mp4
     status <프로젝트>            진행 상황
 
@@ -150,7 +150,7 @@ def main(argv=None) -> None:
     if a.cmd == "doctor":
         from . import doctor; sys.exit(0 if doctor.run() else 1)
     if a.cmd == "login":
-        from . import flow_driver; flow_driver.login(); return
+        raise SystemExit("Vertex AI는 Flow 로그인 대신 저장된 ADC 인증을 사용한다")
     if a.cmd == "new":
         cmd_new(a); return
     if a.cmd == "check":
@@ -166,11 +166,11 @@ def main(argv=None) -> None:
     elif a.cmd == "sync-need":
         from . import timing; timing.sync_need(p)
     elif a.cmd == "submit":
-        from . import flow_driver
+        from . import vertex_video as flow_driver
         only = {int(x) for x in a.only.split(",")} if a.only else None
         flow_driver.submit(p, a.len, only, headless=a.headless)
     elif a.cmd == "collect":
-        from . import flow_driver
+        from . import vertex_video as flow_driver
         flow_driver.collect(p, a.len, headless=a.headless)
     elif a.cmd == "review":
         from . import review; review.run(p)
